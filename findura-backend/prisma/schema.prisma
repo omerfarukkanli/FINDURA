@@ -1,0 +1,180 @@
+// schema.prisma
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  email      String   @unique
+  password   String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  incomes  Income[]
+  expenses Expense[]
+  debts    Debt[]
+}
+
+model Income {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  amount      Float
+  date        DateTime
+  description String?
+
+  userId String     @db.ObjectId
+  user   User       @relation(fields: [userId], references: [id])
+  type   IncomeType
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+enum IncomeType {
+  SALARY
+  INVESTMENT_RETURN
+  SALES_REVENUE
+  RENTAL_INCOME
+  OTHER
+}
+
+model Expense {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  amount      Float
+  date        DateTime
+  description String?
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  type ExpenseType
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+enum ExpenseType {
+  FOOD
+  SHOPPING
+  TRANSPORTATION
+  ACCOMMODATION
+  ENTERTAINMENT
+  EDUCATION
+  HEALTH
+  UTILITIES
+  OTHER
+}
+
+model Debt {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  total_amount     Float
+  remaining_amount Float
+  description      String?
+  start_date       DateTime
+  due_date         DateTime?
+  is_paid          Boolean   @default(false)
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  debtType DebtType
+
+  loanDebt        LoanDebt?
+  creditCardDebt  CreditCardDebt?
+  trafficFineDebt TrafficFineDebt?
+  personalDebt    PersonalDebt?
+  otherDebt       OtherDebt?
+
+  payments Payment[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+enum DebtType {
+  LOAN
+  CREDIT_CARD
+  TRAFFIC_FINE
+  PERSONAL
+  OTHER
+}
+
+model LoanDebt {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  debtId          String @unique @db.ObjectId
+  debt            Debt   @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  bank_name       String
+  interest_rate   Float
+  installments    Int
+  monthly_payment Float
+}
+
+model CreditCardDebt {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  debtId String @unique @db.ObjectId
+  debt   Debt   @relation(fields: [debtId], references: [id], onDelete: Cascade)
+
+  bank_name       String
+  card_limit      Float
+  minimum_payment Float
+  statement_date  DateTime
+}
+
+model TrafficFineDebt {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  debtId String @unique @db.ObjectId
+  debt   Debt   @relation(fields: [debtId], references: [id], onDelete: Cascade)
+
+  fine_type    String
+  plate_number String?
+  location     String?
+  issued_date  DateTime
+}
+
+model PersonalDebt {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  debtId String @unique @db.ObjectId
+  debt   Debt   @relation(fields: [debtId], references: [id], onDelete: Cascade)
+
+  lender_name    String
+  lender_contact String?
+  description    String?
+}
+
+model OtherDebt {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  debtId    String @unique @db.ObjectId
+  debt      Debt   @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  debt_type String
+}
+
+model Payment {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  amount       Float
+  payment_date DateTime
+  method       PaymentMethod
+  description  String?
+
+  debtId String @db.ObjectId
+  debt   Debt   @relation(fields: [debtId], references: [id], onDelete: Cascade)
+
+  created_at DateTime @default(now())
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CREDIT_CARD
+  AUTOMATIC_PAYMENT
+  OTHER
+}
